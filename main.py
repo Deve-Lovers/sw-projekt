@@ -39,23 +39,39 @@ Y_SENSOR_IN = "P9_30"
 
 
 def set_high(pin: str) -> None:
+    """
+    Funkcja ustawiająca dany pin w stan wysoki.
+    """
     GPIO.output(pin, GPIO.HIGH)
 
 
 def set_low(pin: str) -> None:
+    """
+    Funkcja ustawiająca dany pin w stan niski.
+    """
     GPIO.output(pin, GPIO.LOW)
 
 
 class CustomTime:
+    """
+    Klasa zegara aplikacji.
+    """
+
     def __init__(self, h: int = START_TIME[0], m: int = START_TIME[1], s: int = START_TIME[2]):
         self.h = h
         self.m = m
         self.s = s
 
     def get_time(self) -> str:
+        """
+        Pobranie czasu w formacie String.
+        """
         return f"{self.h}:{self.m}:{self.s}"
 
     def increment(self):
+        """
+        Metoda inkrementująca zegar.
+        """
         self.s += 1
 
         if self.s == 60:
@@ -70,6 +86,9 @@ class CustomTime:
             self.h = 0
 
     def run(self):
+        """
+        Metoda uruchamiająca pracę zegara aplikacji.
+        """
         while True:
             self.increment()
             time.sleep(1)
@@ -79,9 +98,15 @@ class CustomTime:
 
     @property
     def seconds(self):
+        """
+        Własność zwracająca czas w sekundach od godziny 00:00:00
+        """
         return self.h * 60 * 60 + self.m * 60 + self.s
 
     def is_greater(self, another_time):
+        """
+        Metoda do porównywania czasu.
+        """
         return another_time.seconds < self.seconds
 
 
@@ -90,6 +115,9 @@ stop_night: bool = False
 
 
 def timedelta(h: int = 0, m: int = 0, s: int = 0) -> CustomTime:
+    """
+    Metoda do obliczania nowego czasu przesuniętego o argumenty funkcji.
+    """
     fake_time = CustomTime(timer.h, timer.m, timer.s)
     seconds = h * 60 * 60 + m * 60 + s
     for i in range(seconds):
@@ -98,6 +126,9 @@ def timedelta(h: int = 0, m: int = 0, s: int = 0) -> CustomTime:
 
 
 def current_time(*args, **kwargs) -> CustomTime:
+    """
+    Metoda zwracająca kopię obiektu reprezentujący obecny czas pracy aplikacji.
+    """
     return CustomTime(h=timer.h, m=timer.m, s=timer.s)
 
 
@@ -108,24 +139,39 @@ class SmallLight:
         self._start(start)
 
     def _start(self, start):
+        """
+        Metoda uruchamiająca sygnalizator w zalezności od trybu drogi.
+        """
         if start == GREEN:
             self.turn_on_green()
         elif start == RED:
             self.turn_on_red()
 
     def turn_off(self) -> None:
+        """
+        Metoda wyłączająca sygnalizator.
+        """
         set_low(self.black)
         set_low(self.yellow)
 
     def turn_on_green(self) -> None:
+        """
+        Metoda włączająca światło zielone.
+        """
         set_high(self.black)
         set_high(self.yellow)
 
     def turn_on_red(self) -> None:
+        """
+        Metoda włączająca światło czerwone.
+        """
         set_high(self.black)
         set_low(self.yellow)
 
     def _blink_by_time(self, given_time: float, iterations: int) -> None:
+        """
+        Metoda do mrugania świateł na bazie argumentów.
+        """
         for _ in range(iterations):
             self.turn_off()
             time.sleep(given_time)
@@ -133,23 +179,39 @@ class SmallLight:
             time.sleep(given_time)
 
     def blinking(self) -> None:
+        """
+        Metoda do mrugania świateł przed przełączenia w tryb czerwony.
+        """
         self._blink_by_time(0.35, 4)
         self._blink_by_time(0.25, 4)
 
 
 class CarLight:
+    """
+    Klasa sygnalizatora drogowego dla samochodów.
+    """
+
     def __init__(self, green: str, yellow: str, red: str, start: str) -> None:
+        """
+        Inicjalizator klasy sygnalizatora świetlego dla samochodów.
+        """
         self.green = green
         self.yellow = yellow
         self.red = red
         self._start(start)
 
     def _setup(self):
+        """
+        Metoda wykonująca bezpieczny setup na start.
+        """
         set_high(self.green)
         set_high(self.yellow)
         set_high(self.red)
 
     def _start(self, start: str) -> None:
+        """
+        Metoda uruchamiająca sygnalizator po przypisaniu pinów.
+        """
         self._setup()
         if start == GREEN:
             self.setup_green()
@@ -157,6 +219,10 @@ class CarLight:
             self.setup_red()
 
     def blink_yellow(self) -> None:
+        """
+        Metoda uruchamiająca i podtrzymująca tryb nocny, dopóki nie zajdzie wywłaszczenie.
+        Tryb nocny kończy się kiedy zmienna 'stop_night' przyjmie wartość True.
+        """
         global stop_night
         stop_night = False
         set_high(self.green)
@@ -170,12 +236,21 @@ class CarLight:
             time.sleep(0.5)
 
     def setup_red(self) -> None:
+        """
+        Metoda uruchamiająca światło czerwone na start działania sygnalizatora.
+        """
         set_low(self.red)
 
     def setup_green(self) -> None:
+        """
+        Metoda uruchamiająca światło zielone na start działania sygnalizatora.
+        """
         set_low(self.green)
 
     def make_red(self) -> None:
+        """
+        Metoda uruchamiająca światło czerwone.
+        """
         set_high(self.green)
         set_low(self.yellow)
         time.sleep(1)
@@ -183,6 +258,10 @@ class CarLight:
         set_low(self.red)
 
     def make_green(self) -> None:
+        """
+        Metoda uruchamiająca zielone światło. Najpierw zapala jednocześnie światło zółte,
+        następnie gasi zółte i czerwone i zapala zielone
+        """
         set_low(self.yellow)
         time.sleep(1)
         set_high(self.red)
@@ -191,6 +270,10 @@ class CarLight:
 
 
 class Mode(StrEnum):
+    """
+    Enum ze trybami jakie moze przyjąć droga.
+    """
+
     cars = "cars"
     people = "people"
     night = "night"
@@ -198,6 +281,10 @@ class Mode(StrEnum):
 
 @dataclasses.dataclass
 class State:
+    """
+    Klasa przechowująca informacje o stanie danej drogi.
+    """
+
     people_await: bool = False
     cars_await: bool = False
     last_car_time: CustomTime | None = None
@@ -209,6 +296,9 @@ class Button:
 
     @property
     def is_pressed(self) -> bool:
+        """
+        Metoda słuząca do zwracania informacji o stanie przycisku. Jezeli jest wciśnięty zwraca True.
+        """
         return GPIO.input(self.pin) == GPIO.HIGH
 
 
@@ -218,11 +308,18 @@ class Sensor:
 
     @property
     def is_active(self) -> bool:
+        """
+        Metoda słuząca do zwracania informacji o czujniku przerwania wiązki. Zwraca True jeśli czujnik jest przerwany.
+        """
         GPIO.setup(self.pin, GPIO.IN)
         return GPIO.input(self.pin) == GPIO.LOW
 
 
 class Road:
+    """
+    Klasa pojedynczej drogi.
+    """
+    
     def __init__(
         self,
         label: str,
@@ -232,6 +329,10 @@ class Road:
         button: Button,
         sensor: Sensor,
     ) -> None:
+        """
+        Inicjalizator drogi, przechowujący informacje o trybie w którym obecnie działa droga. Znajdują
+        się w nim równiez przypisania do świateł dla pieszych oraz drogowych, oraz powiązana przyciski / czujniki.
+        """
         self.label = label
         self.mode = mode
         self.small_lights = small_lights
@@ -246,6 +347,10 @@ class Road:
         return f"People await: {self.state.people_await} ; Cars await {self.state.cars_await} ; Expropriation {self.expropriation}" 
 
     def read_button(self) -> None:
+        """
+        Funkcja która nasłuchuje dany przycisk jezeli dana droga jest w trybie przepuszczania samochdów.
+        Jeśli przycisk jest wciśnięty zostaje ustawiona zmienna informująca o oczekiwaniu pieszych.
+        """
         while True:
             if self.mode == Mode.cars:
                 if self.button.is_pressed:
@@ -253,6 +358,12 @@ class Road:
             time.sleep(0.2)
 
     def read_sensor(self) -> None:
+        """
+        Zczytywanie danych z czujnika przerwania wiązki. Jeśli następuje przerwanie to zostaje zawsze
+        nadpisany czas pojawienia się ostatniego auta: self.state.last_car_time = current_time()
+        oraz jeśli obecnie droga przepuszcza pieszych to zostaje ustawiona właściwość, która informuje,
+        ze samochody oczekują na czewonym świetle.
+        """
         while True:
 
             if self.sensor.is_active:
@@ -262,16 +373,29 @@ class Road:
             time.sleep(0.2)
 
     def read_all_states(self):
+        """
+        Funkcja uruchamiająca nasłuchwiwanie i zczytywanie danych z czujników przerwania wiązki
+        oraz przycisków. Funkcja uruchamia dwa osobne wątki aby nie zatrzymywać pracy programu.
+        """
         Thread(target=self.read_button).start()
         Thread(target=self.read_sensor).start()
 
     def cars_on(self) -> None:
+        """
+        Metoda do zmiany danej drogi z trybu dla pieszych w tryb dla samochodów. Metoda uruchamia
+        mruganie świateł dla pieszych, nestępnie zapala im czerwone światło. W następnej kolejności
+        zapala zielone światła samochodom.
+        """
         self.small_lights.blinking()
         self.small_lights.turn_on_red()
         self.car_light.make_green()
         self.mode = Mode.cars
 
     def people_on(self) -> None:
+        """
+        Metoda do zmiany danej drogi z trybu dla samochodów w tryb dla pieszych. Metoda zapala
+        samochodom czerwone światło a następnie włącza zielone światło pieszym.
+        """
         thread = Thread(target=self.car_light.make_red)
         thread.start()
         thread.join()
@@ -280,23 +404,36 @@ class Road:
         self.mode = Mode.people
 
     def set_night(self) -> None:
+        """
+        Metoda do przechodzenia w tryb nocny wszystkich świateł.
+        """
         self.mode = Mode.night
         self.small_lights.turn_off()
         Thread(target=self.car_light.blink_yellow).start()
 
     def switch(self) -> None:
+        """
+        Metoda do zmiany trybu świateł.
+        """
         if self.mode == Mode.cars:
             self.people_on()
         else:
             self.cars_on()
 
-    def calculate_expropriation(self):
+    def calculate_expropriation(self) -> None:
+        """
+        Metoda do ustawiania właściwości informującej czy dla danej drogi jest wywłaszczenie które oczekuje
+        na zmianę trybu.
+        """
         if self.mode == Mode.cars:
             if self.state.people_await == True:
                 self.expropriation = True
 
 
-    def clear_state(self):
+    def clear_state(self) -> None:
+        """
+        Metoda do czyszczenia stanów klasy.
+        """
         self.state.people_await = False
         self.state.cars_await = False
         self.state.last_car_time = None
@@ -304,17 +441,30 @@ class Road:
 
 
 class CrossRoads:
+    """
+    Klasa obsługująca drogi przekazane w zmiennej 'roads'
+    """
+
     def __init__(self, roads: dict[str: Road]) -> None:
+        """
+        Inicjalizator klasy CrossRoads.
+        """
         self.roads = roads
         self.last_switch: CustomTime = current_time()
         self.next_switch: CustomTime = self._calculate_next_switch
         self.night = False
 
     def clear_states(self):
+        """
+        Metoda do czyszczenia statusów we wszystkich powiązanych drogach.
+        """
         for k, road in self.roads.items():
             Thread(target=road.clear_state).start()
 
     def start_day(self) -> None:
+        """
+        Metoda słuząca do rozpoczynania dnia po nocy.
+        """
         global stop_night
         stop_night = True
 
@@ -332,37 +482,61 @@ class CrossRoads:
         time.sleep(2)
 
     def start_night(self) -> None:
+        """
+        Metoda rozpoczynająca noc.
+        """
         self.clear_states()
         for k, road in self.roads.items():
             Thread(target=road.set_night).start()
 
     @property
     def _calculate_next_switch(self):
+        """
+        Metoda zwracająca czas do następnej zmiany trybu pracy świateł.
+        """
         return timedelta(s=60)
 
     def _log(self):
+        """
+        Metoda słuąca do logowania aktualnych stanów dróg.
+        """
         print(f"(log) Current time: {timer} Next switch: {self.next_switch}")
         for k, road in self.roads.items():
             print(f" - Road {k}: Mode: {road.mode}, Status: {road.state_view}")
 
     def _log_night(self):
+        """
+        Metoda logująca, ze obecnie skrzyzowanie jest w trybie nocnym.
+        """
         print("(log) ---- NIGHT ----")
 
     def listen(self):
+        """
+        Metoda uruchamiająca nasłuchiwanie stanów powiązanych przycisków i czujników przerwania wiązki.
+        """
         for k, road in self.roads.items():
             road.read_all_states()
 
     def _iteration(self) -> None:
+        """
+        Metoda do wywoływania akcji co iterację sprawdzenia stanów skrzyzowania.
+        """
         for k, road in self.roads.items():
             Thread(target=road.calculate_expropriation).start()
 
     def switch(self):
+        """
+        Metoda do zmiany trygu kazdej powiązanej drogi w skrzyzowaniu.
+        """
         self.clear_states()
         for k, road in self.roads.items():
             Thread(target=road.switch).start()
         self.clear_states()
 
     def get_force_switch(self) -> bool:
+        """
+        Metoda sprawdzająca, czy w obecnym stanie drogi wywierają wymuszenie.
+        """
         if timer.seconds + 3 > self.next_switch.seconds:
             return False
 
@@ -392,6 +566,12 @@ class CrossRoads:
 
 
     def process(self):
+        """
+        Główna metoda klasy CrossRoads, w której odbywa się cały proces iteracji skrzyzowania dróg.
+        Metoda uruchamia proces nasłuchiwania stanów w przyciskach i czujnikach, oraz wchodzi w nieskończoną
+        pętle działania skrzyzowania. Logika obsługuje przepinanie się w tryb nocny, obsługuje wywłaszczenia,
+        oraz zmienia tryb świateł kiedy minie wskazany czas.
+        """
         self.listen()
     
         while True:
@@ -425,6 +605,9 @@ class CrossRoads:
 
 
 def setup(*args, **kwargs) -> None:
+    """
+    Funkcja do setup'owania konkretnych pinów na BBB.
+    """
     INPUTS = (
         X_BUTTON_IN, X_SENSOR_IN,
         Y_BUTTON_IN, Y_SENSOR_IN
@@ -445,6 +628,9 @@ def setup(*args, **kwargs) -> None:
 
 
 def main(*args, **kwargs) -> None:
+    """
+    Funkcja main.
+    """
     # setup BBB
     setup()
 
